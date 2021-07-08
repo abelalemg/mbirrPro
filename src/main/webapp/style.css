@@ -1,0 +1,11 @@
+@charset "ISO-8859-1";
+
+#box {
+	position: absolute;
+	left: 180px;
+}
+
+#submit {
+	position: relative;
+	left: 200px;
+}
