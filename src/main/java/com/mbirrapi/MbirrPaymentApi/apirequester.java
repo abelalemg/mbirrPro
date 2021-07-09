@@ -12,11 +12,8 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 import org.json.simple.JSONObject;
 import java.sql.Timestamp;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Locale;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,6 +24,7 @@ public class apirequester extends HttpServlet
 
 	private static final long serialVersionUID = 1L;
 	
+	@SuppressWarnings("unchecked")
 	public void doPost (HttpServletRequest requests, HttpServletResponse responses) throws ServletException, IOException
 	{
 		String submit = requests.getParameter("submit") == null ? "" : requests.getParameter("submit");		
@@ -54,7 +52,7 @@ public class apirequester extends HttpServlet
 			Timestamp timestamp = new Timestamp(date.getTime());
 			String formattedTimestamp = new SimpleDateFormat("yyyy-MM-dd").format(timestamp);
 			json2.put("simulation_only", "false");
-			json2.put("client_transaction_id", "qe92s47e94-7d7c-4731-a802-cb42474bd25a");
+			json2.put("client_transaction_id", "qewt994-7ds7sc-4731-addf802-cb4d74bd25a");
 			json2.put("timestamp", formattedTimestamp);
 			json2.put("amount_in_cents", amountInCent);
 			json2.put("operation_type", "Transfer");
@@ -62,7 +60,7 @@ public class apirequester extends HttpServlet
 			json3.put("sender", json);
 			json3.put("beneficiary", json1);
 			json3.put("transaction", json2);
-			json3.put("end_user_message", "Thank you. We've refunded your payment.");
+			json3.put("end_user_message", "We've refunded your payment. Thank you.");
 			String finalJson = json3.toString();
 			
 			String privateKey = "-----BEGIN PRIVATE KEY-----"
@@ -103,6 +101,7 @@ public class apirequester extends HttpServlet
             httpUrlConnection.setReadTimeout(60000);
             httpUrlConnection.setDoOutput(true);
             httpUrlConnection.setUseCaches(true);
+            httpUrlConnection.setDoInput(true);
 			httpUrlConnection.setRequestMethod("POST");
 			httpUrlConnection.setRequestProperty("Accept", "application/json");
 			httpUrlConnection.setRequestProperty("Content-Type", "application/json");
@@ -113,17 +112,57 @@ public class apirequester extends HttpServlet
             outputStream.write(byte_value);
             outputStream.flush();
             outputStream.close();
-            
-            InputStream inputStream = httpUrlConnection.getInputStream();
-            byte[] val_rspns = new byte[2048];
-            int i = 0;
-            StringBuilder stringBuilder = new StringBuilder();
-            while ((i = inputStream.read(val_rspns)) != -1) {
-                stringBuilder.append(new String(val_rspns, 0, i));
-            }
-            inputStream.close();
-            String server_responce = stringBuilder.toString();
+                 
+            String jsonResponse = null;
+            String server_responce = null;
+            int statusCode = 0;
+            switch (httpUrlConnection.getResponseCode()) {
+			case 200:
+				InputStream inputStream = httpUrlConnection.getInputStream();
+	            byte[] val_rspns = new byte[2048];
+	            int i = 0;
+	            StringBuilder stringBuilder = new StringBuilder();
+	            while ((i = inputStream.read(val_rspns)) != -1) {
+	                stringBuilder.append(new String(val_rspns, 0, i));
+	            }
+				 server_responce = httpUrlConnection.getResponseMessage();
+	             statusCode = httpUrlConnection.getResponseCode();
+	             jsonResponse = stringBuilder.toString();
+	             inputStream.close();
+				break;
+			case 499:
+				InputStream inputStream1 = httpUrlConnection.getErrorStream();
+	            byte[] val_rspns1 = new byte[2048];
+	            int i1 = 0;
+	            StringBuilder stringBuilder1 = new StringBuilder();
+	            while ((i1 = inputStream1.read(val_rspns1)) != -1) {
+	                stringBuilder1.append(new String(val_rspns1, 0, i1));
+	            }
+				 server_responce = httpUrlConnection.getResponseMessage();
+	             statusCode = httpUrlConnection.getResponseCode();
+	             jsonResponse = stringBuilder1.toString();
+	             inputStream1.close();
+				break;
+			case 500:
+				InputStream inputStream2 = httpUrlConnection.getErrorStream();
+	            byte[] val_rspns2 = new byte[2048];
+	            int i2 = 0;
+	            StringBuilder stringBuilder2 = new StringBuilder();
+	            while ((i2 = inputStream2.read(val_rspns2)) != -1) {
+	                stringBuilder2.append(new String(val_rspns2, 0, i2));
+	            }
+				 server_responce = httpUrlConnection.getResponseMessage();
+	             statusCode = httpUrlConnection.getResponseCode();
+	             jsonResponse = stringBuilder2.toString();
+	             inputStream2.close();
+				break;
+			default:
+				break;
+			}
             System.out.println(server_responce);
+            System.out.println(statusCode);
+            System.out.println(jsonResponse);
+            httpUrlConnection.disconnect();
 		}
 	}
 }
