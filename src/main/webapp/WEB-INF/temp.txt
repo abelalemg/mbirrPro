@@ -1,0 +1,119 @@
+<%@ page language="java" contentType="text/html; charset=ISO-8859-1"
+    pageEncoding="ISO-8859-1"%>
+
+<%@ page import="org.json.simple.JSONObject"%>
+<%@ page import="java.util.Date"%>
+<%@ page import="java.sql.Timestamp"%>
+<%@ page import="java.security.KeyFactory"%>
+<%@ page import="java.security.PrivateKey"%>
+<%@ page import="java.security.Signature"%>
+<%@ page import="java.security.spec.PKCS8EncodedKeySpec"%>
+<%@ page import="java.util.Base64"%>
+<%@ page import="java.io.*"%>
+<%@ page import="java.net.*"%>
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="ISO-8859-1">
+		<title>Payment API</title>
+		<link rel="stylesheet" href="style.css" />
+	</head>
+	<body>
+		<h1>Withdraw money by Mbirr</h1>
+		<form action="index.jsp" method="POST">
+			<label><b>Your Name: </b></label>
+			<input type="text" name="name" id="box" required/><br /><br />
+			<label><b>Mbirr Phone Number: </b></label>
+			<input type="tel" name="tel" id="box" required/><br /><br />
+			<label><b>Amount to withdraw: </b></label>
+			<input type="number" name="amount" id="box" required/><br /><br />
+			<input type="submit" name="submit" value="Withdraw" id="submit" /><br/><br />
+		</form>
+		<%	
+			String submit = request.getParameter("submit") == null ? "" : request.getParameter("submit");		
+			if (submit!=null && submit.equals("Withdraw"))
+			{
+				String name = request.getParameter("name") == null ? "" : request.getParameter("name");
+				String tel = request.getParameter("tel") == null ? "" : request.getParameter("tel");
+				int amount = Integer.parseInt(request.getParameter("amount") == null ? "" : request.getParameter("amount"));
+				int amountInCent = amount*100;
+				
+				JSONObject json = new JSONObject();
+				json.put("name", name);
+				json.put("account_number", "36985469");
+				json.put("mobile_number", tel);
+				json.put("language", "en");
+				json.toString();
+				
+				JSONObject json1 = new JSONObject();
+				json1.put("name", name);
+				json1.put("account_number", "456897646");
+				json1.put("mobile_number", tel);
+				json1.put("language", "en");
+				json1.toString();
+				
+				JSONObject json2 = new JSONObject();
+				Date date = new Date();
+				Timestamp timestamp = new Timestamp(date.getTime());
+				json2.put("simulation_only", "false");
+				json2.put("client_transaction_id", "e9247e94-7d7c-4731-a802-cb42474bd25a");
+				json2.put("timestamp", timestamp.toString() );
+				json2.put("amount_in_cents", amountInCent);
+				json2.put("operation_type", "Transfer");
+				json2.toString();
+				
+				JSONObject json3 = new JSONObject();
+				json3.put("sender", json);
+				json3.put("beneficiary", json1);
+				json3.put("transaction", json2);
+				json3.put("end_user_message", "Helllo");
+				json3.toString();
+				
+				StringWriter outJson = new StringWriter();
+				json3.writeJSONString(out);
+				String finalJson = outJson.toString();
+				
+				
+				//out.print(json3);
+				String privateKey = "-----BEGIN RSA PRIVATE KEY-----"
+						+"MIICXAIBAAKBgQCxX/5CSALWMcyL64jDE1iiVWPLKcgPv6S244rc5x8fgAbalJJ9"
+						+"2G36ASl9rUFbh/OoDvtpWRhVK09BuCsV+5goOVMljHHRVRc6CUrch0xLiMVlfLxY"
+						+"eyA0XB2Th4peCH9oe+Us8l6T8VY81QFwbgi1vfHjNuv//3lZjorZh1tJnQIDAQAB"
+						+"AoGADQ8NMCIPG2f1MEP6AKq29tSkkTuVQBuS6+gavCLD9tS9LHCNzHgXuLVHMbqE"
+						+"ulFrDe90cRAfK34RyrvdaDPqwsP6CfDx+EJSdpznkBT+ApmV64qq37lukQikYgfo"
+						+"IMQh5x+uCVvEgszg2O33at4Rt8MCzHZdVq8h/ImqgUfaHt0CQQDbE8P5dC0scrsz"
+						+"ims4zWiyBTNOGfMaEaKoQ+0FbgCmlaqCWZXauXiRYAtJXsBdilLoMQUDVwxCWJYW"
+						+"zzU14dm/AkEAz0T03Hq9IhQGUrEOicFjXUaVJ8SY1AQXm3mU4MGMbiI79Ei8ggf5"
+						+"nCWi/b4ghPnOPJnmJsCrIb3UaUyYrgmbowJBAMthIRkvIlTWOjYR9ZJpFx3VOBj0"
+						+"fDwiTRfa32qgAZik7wNN+ZFxh52mRTQa84ijRm5qO5YrNKVPKh8IxAQ+pG8CQHsw"
+						+"2PhSWyduD3QGmEV4E77UvMIuL0eURxO5Z6tOXlD3N/sxYBlI9CrCk+WMo3dlohaS"
+						+"wiA2U4Bye1U6mWSXgVECQGd8qTMzh+wSu2de1nDAgOmkSflOEbKEMV4eL25K55a2"
+						+"mnOrlfQUComlNPsLNlnJIaTF69aTadyRkYRKDsDcI6Y="
+						+"-----END RSA PRIVATE KEY-----";
+				
+				String contentSignature = null;
+				try{
+					privateKey = privateKey.replaceAll("\\n", "").replace("-----BEGIN RSA PRIVATE KEY-----", "").replace("-----END RSA PRIVATE KEY-----", "");
+					KeyFactory kf = KeyFactory.getInstance("RSA");
+					PKCS8EncodedKeySpec keySpecPKCS8 = new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKey));
+					PrivateKey privKey = kf.generatePrivate(keySpecPKCS8);
+					byte[] data = finalJson.getBytes("UTF8");
+					Signature sig = Signature.getInstance("SAH1withRSA");
+					sig.initSign(privKey);
+					sig.update(data);
+					byte[] signatureBytes = sig.sign();
+					contentSignature = Base64.getEncoder().encodeToString(signatureBytes);
+				}catch(Exception e){
+					System.out.print(e);
+				}
+				URL url = new URL ("https://demo-api.mbirr.com/transactionEngine/payment");
+				HttpURLConnection httpUrlConnection = (HttpURLConnection) url.openConnection();
+				httpUrlConnection.setRequestMethod("POST");
+				httpUrlConnection.setRequestProperty("Accept", "application/json");
+				httpUrlConnection.setRequestProperty("Content-Type", "application/json");
+				httpUrlConnection.setRequestProperty("Content-Signature", contentSignature);
+			}
+		%>
+	</body>
+</html>
